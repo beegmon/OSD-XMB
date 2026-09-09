@@ -47,7 +47,7 @@ function GetNeutrinoArgs(GAMEID = false) {
 
 	if ('gc' 	in GameCFG) { Args.push(`-gc=${GameCFG["gc"]}`); }
 	if ('VMC0' 	in GameCFG) { Args.push(`-mc0=${PATHS.VMC}${GameCFG["VMC0"]}_0.vmc`); }
-	if ('VMC1' 	in GameCFG) { Args.push(`-mc1=${PATHS.VMC}${GameCFG["VMC0"]}_1.vmc`); }
+	if ('VMC1' 	in GameCFG) { Args.push(`-mc1=${PATHS.VMC}${GameCFG["VMC1"]}_1.vmc`); }
 
 	return Args;
 }
