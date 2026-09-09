@@ -52,6 +52,18 @@
       ]]>
     </Confirm>
   </Option>
+  <Option Type="CONTEXT" Icon="15" Default="{Number(UserConfig.ForceMemcard)}" Name="{SETSYS6.NAME}" Description="{SETSYS6.DESC}">
+    <Component Name="{NO}" Icon="-1"/>
+    <Component Name="{YES}" Icon="-1"/>
+    <Confirm>
+      <![CDATA[
+        function(index, item) {
+            UserConfig.ForceMemcard = index === 1;
+            CfgMan.PropertySet("main.cfg", "forcemc", UserConfig.ForceMemcard.toString());
+        }
+      ]]>
+    </Confirm>
+  </Option>
   <Option Type="DIALOG" Icon="15" Name="{SETSYS5}">
     <Dialog Type="INFO" BG="false" Icon="8" Title="{SETSYS5}" BackBtn="true" ConfirmBtn="false">
 	    <Info>
