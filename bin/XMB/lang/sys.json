@@ -99,6 +99,26 @@
       "Ativar a leitura de discos físicos."
     ]
   },
+  "SETSYS6": {
+    "NAME": [
+      "Always Save to Memory Card",
+      "Toujours sauvegarder sur la carte mémoire",
+      "Guardar siempre en la tarjeta de memoria",
+      "Immer auf Memory Card speichern",
+      "Salva sempre sulla Memory Card",
+      "Altijd opslaan op geheugenkaart",
+      "Salvar sempre no cartão de memória"
+    ],
+    "DESC": [
+      "Ignore per-game virtual memory cards and use the card in the slot.",
+      "Ignorer les cartes mémoire virtuelles par jeu et utiliser la carte insérée.",
+      "Ignorar las tarjetas de memoria virtuales por juego y usar la tarjeta insertada.",
+      "Virtuelle Memory Cards pro Spiel ignorieren und die eingesteckte Karte verwenden.",
+      "Ignora le memory card virtuali per gioco e usa la scheda inserita.",
+      "Negeer virtuele geheugenkaarten per spel en gebruik de kaart in de sleuf.",
+      "Ignorar cartões de memória virtuais por jogo e usar o cartão inserido."
+    ]
+  },
   "SETSYS5": [
     "System Information",
     "Informations système",

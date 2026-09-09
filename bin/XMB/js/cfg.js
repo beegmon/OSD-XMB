@@ -24,6 +24,7 @@ const UserConfig = {
 	HourFormat: 0,
     Timezone: 0,
     Network: 0,
+	ForceMemcard: false,
 	ParentalSet: 0,
 	ParentalCode: [0, 0, 0, 0]
 };
@@ -46,8 +47,14 @@ function GetNeutrinoArgs(GAMEID = false) {
 	const GameCFG = CfgMan.Get(`${GAMEID}.cfg`);
 
 	if ('gc' 	in GameCFG) { Args.push(`-gc=${GameCFG["gc"]}`); }
-	if ('VMC0' 	in GameCFG) { Args.push(`-mc0=${PATHS.VMC}${GameCFG["VMC0"]}_0.vmc`); }
-	if ('VMC1' 	in GameCFG) { Args.push(`-mc1=${PATHS.VMC}${GameCFG["VMC1"]}_1.vmc`); }
+	// When the user has chosen to always save to the physical memory card,
+	// emit no -mc argument at all. Neutrino then leaves the slot alone and
+	// the game writes to whatever card is in it, which is the point of
+	// owning a memory card emulator that switches per game.
+	if (!UserConfig.ForceMemcard) {
+		if ('VMC0' 	in GameCFG) { Args.push(`-mc0=${PATHS.VMC}${GameCFG["VMC0"]}_0.vmc`); }
+		if ('VMC1' 	in GameCFG) { Args.push(`-mc1=${PATHS.VMC}${GameCFG["VMC1"]}_1.vmc`); }
+	}
 
 	return Args;
 }
@@ -81,6 +88,7 @@ function ReadUserSettings() {
 	if ('waves'		 in config) { UserConfig.Waves		  = (config["waves"] === "true"); 	}
 	if ('Theme'		 in config) { UserConfig.Theme		  = config["Theme"];				}
 	if ('network'	 in config) { UserConfig.Network	  = parseInt(config["network"]);	}
+	if ('forcemc'	 in config) { UserConfig.ForceMemcard = (config["forcemc"] === "true");	}
 
 	if (!os.readdir(PATHS.Theme)[0].includes(UserConfig.Theme)) { UserConfig.Theme = "Original"; }
 
