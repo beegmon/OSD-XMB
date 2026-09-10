@@ -37,8 +37,55 @@
 						enumerable: true
 					});
 				}
+				if (items.length > 1) { items.sort((a, b) => a.Name.localeCompare(b.Name)); }
 				return items;
 			}
+
+			// Buckets with the same name can appear under DVD/ and CD/ and under
+			// several devices. Collect the paths per name first, then build one
+			// item per name that scans every path it came from.
+			function CollectFolders(map, path, device, media) {
+				const dirList = System.listDir(path);
+				for (let j = 0; j < dirList.length; j++) {
+					const entry = dirList[j];
+					if (!entry.dir || entry.name === "." || entry.name === "..") { continue; }
+					if (!(entry.name in map)) { map[entry.name] = []; }
+					map[entry.name].push({ path: `${path}${entry.name}/`, dev: device, mt: media });
+				}
+			}
+
+			function FoldersToItems(map) {
+				const items = [];
+				for (let name in map) {
+					items.push({
+						Name: name,
+						Description: "",
+						Icon: 18,
+						Type: "SUBMENU",
+						Sources: map[name]
+					});
+
+					// A submenu Value must be an object carrying Items and Default,
+					// the same shape xmlParseSubMenu builds. A bare array crashes
+					// DashUIEnterSubMenu.
+					Object.defineProperty(items[items.length - 1], "Value", {
+						get() {
+							let list = [];
+							for (let k = 0; k < this.Sources.length; k++) {
+								const s = this.Sources[k];
+								list = list.concat(ScanGames(s.path, s.dev, s.mt));
+							}
+							if (list.length > 1) { list.sort((a, b) => a.Name.localeCompare(b.Name)); }
+							return { Items: list, Default: 0 };
+						},
+						enumerable: true,
+						configurable: true
+					});
+				}
+				if (items.length > 1) { items.sort((a, b) => a.Name.localeCompare(b.Name)); }
+				return items;
+			}
+
 			const devices = System.devices();
 			const bsd = [];
 
@@ -47,6 +94,7 @@
 			if (devices.some(dev => dev.name === "mmce")) { bsd.push({ root: "mmce", count: 2,  device: "mmce" }); }
 
 			let gameList = [];
+			const folderMap = Object.create(null);
 			for (let i = 0; i < bsd.length; i++) {
 				const b = bsd[i];
 				for (let j = 0; j < b.count; j++) {
@@ -63,22 +111,23 @@
 							case "udp": dev = "udpbd"; 		break;
 						}
 					}
-					else if (b.root === "hdd") { gameList = gameList.concat(ScanGames(path, dev, "")); break; }
+					else if (b.root === "hdd") { gameList = gameList.concat(ScanGames(path, dev, "")); break; } // APA partitions, not folders
 
 					const directory = os.readdir(path)[0];
 					if (!directory) { return; }
 
-					if (directory.includes("DVD")) 	{ gameList = gameList.concat(ScanGames(`${path}/DVD/`, dev, "dvd")); }
-					if (directory.includes("CD")) 	{ gameList = gameList.concat(ScanGames(`${path}/CD/`, dev, "cd")); }
+					if (directory.includes("DVD")) 	{ CollectFolders(folderMap, `${path}/DVD/`, dev, "dvd"); gameList = gameList.concat(ScanGames(`${path}/DVD/`, dev, "dvd")); }
+					if (directory.includes("CD")) 	{ CollectFolders(folderMap, `${path}/CD/`, dev, "cd"); gameList = gameList.concat(ScanGames(`${path}/CD/`, dev, "cd")); }
 					if (directory.includes("PS2")) 	{
 						const subdir = os.readdir(`${path}PS2/`)[0];
-						if 	   (subdir.includes("DVD")) { gameList = gameList.concat(ScanGames(`${path}PS2/DVD/`, dev, "dvd")); }
-						else if (subdir.includes("CD")) { gameList = gameList.concat(ScanGames(`${path}PS2/CD/`, dev, "cd")); }
+						if 	   (subdir.includes("DVD")) { CollectFolders(folderMap, `${path}PS2/DVD/`, dev, "dvd"); gameList = gameList.concat(ScanGames(`${path}PS2/DVD/`, dev, "dvd")); }
+						else if (subdir.includes("CD")) { CollectFolders(folderMap, `${path}PS2/CD/`, dev, "cd"); gameList = gameList.concat(ScanGames(`${path}PS2/CD/`, dev, "cd")); }
 					}
 				}
 			}
 
 			if (gameList.length > 1) { gameList.sort((a, b) => a.Name.localeCompare(b.Name)); }
+			gameList = FoldersToItems(folderMap).concat(gameList);
 
 			return gameList;
     ]]>
@@ -96,6 +145,7 @@
 					if (i < 0) { MainMutex.lock(); continue; }
           if (i > selected + 5) { MainMutex.lock(); break; }
 					const game = SubMenu.Items[i];
+					if (game.Type === "SUBMENU") { MainMutex.lock(); continue; }
 					delete game.Icon;
           getPS2GameID(game);
 
