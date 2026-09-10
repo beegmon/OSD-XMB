@@ -111,7 +111,10 @@ const DiscTray = (() => {
 		// Use neutrino if available
 		if ((std.exists(`${PATHS.Neutrino}neutrino.elf`)) && (os.readdir(PATHS.Neutrino)[0].includes("modules"))) {
 			ELFPath = `${PATHS.Neutrino}neutrino.elf`;
-			ELFArgs = GetNeutrinoArgs(ELFName.toUpperCase);
+			ELFArgs = GetNeutrinoArgs(ELFName.toUpperCase());
+			// Tell an MMCE device which disc this is, so it can mount that
+			// game's virtual memory card. No-op when no device is present.
+			MMCE.SetGameID(ELFName.toUpperCase());
         }
 
 		AddItem({
