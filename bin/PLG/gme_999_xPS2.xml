@@ -6,6 +6,7 @@
 				ncfg["last"] = DashUI.SelectedItem.Name;
 				CfgMan.Set("neutrino.cfg", ncfg);
 				setHistoryEntry(DashUI.SelectedItem.GameID.toUpperCase());
+				MMCE.SetGameID(DashUI.SelectedItem.GameID.toUpperCase());
 			}
 
 			function ScanGames(path, device, media) {

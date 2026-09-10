@@ -1273,3 +1273,90 @@ let TmpCanvas = Screen.getMode();
 
 ftxtWrite(`${PATHS.XMB}log.txt`, ""); // Init Log File.
 console.log("INIT LIB: SYSTEM COMPLETE");
+
+// ---------------------------------------------------------------------------
+// MMCE game ID
+//
+// Tells a memory card emulator (SD2PSX, MemCard PRO2, PSxMemCard) which game
+// is about to run, so it can mount that game's virtual memory card. Without
+// this, physical discs share one card, because nothing else in the launch
+// path knows what the disc is.
+//
+// AthenaEnv exposes no devctl binding, but its ERL export table carries every
+// global symbol linked into the binary, so fileXioDevctl is reachable through
+// findRelocObject plus nativeCall.
+//
+// Commands are MMCEMAN's, matching NHDDL mmceMountVMC():
+//   0x1 ping, 0x2 get status (bit 0 = busy), 0x8 set game id.
+// ---------------------------------------------------------------------------
+const MMCE = {
+    Ready:   false,   // probe has run
+    Devctl:  0,       // address of fileXioDevctl
+    Slot:   -1,       // which mmceN: answered, -1 for none
+    Enabled: true,
+
+    PING: 0x1, STATUS: 0x2, SETID: 0x8,
+
+    Call(mp, cmd, arg, arglen) {
+        return System.nativeCall(this.Devctl, [
+            { type: System.T_STRING, value: mp     },
+            { type: System.T_INT,    value: cmd    },
+            { type: System.T_STRING, value: arg    },
+            { type: System.T_INT,    value: arglen },
+            { type: System.T_PTR,    value: 0      },
+            { type: System.T_INT,    value: 0      }
+        ], System.T_INT);
+    },
+
+    // Runs once. Everything after this is a no-op if no device answered.
+    Init() {
+        if (this.Ready) { return; }
+        this.Ready = true;
+
+        try {
+            const cfg = CfgMan.Get("main.cfg");
+            if (("mmce_gameid" in cfg) && (cfg["mmce_gameid"] === "0")) {
+                this.Enabled = false;
+                return;
+            }
+        } catch (e) { /* no config yet, stay enabled */ }
+
+        try {
+            const addr = System.findRelocObject("fileXioDevctl");
+            if (!addr) { console.log("MMCE: fileXioDevctl not exported"); return; }
+            this.Devctl = addr;
+        } catch (e) { console.log(`MMCE: symbol lookup failed: ${e}`); return; }
+
+        for (let s = 0; s < 2; s++) {
+            try {
+                if (this.Call(`mmce${s}:`, this.PING, "", 0) >= 0) { this.Slot = s; break; }
+            } catch (e) { /* try the next slot */ }
+        }
+
+        if (this.Slot < 0) { console.log("MMCE: no device present"); }
+        else { console.log(`MMCE: device on mmce${this.Slot}:`); }
+    },
+
+    // id is the SLUS_201.13 form both call sites already produce.
+    SetGameID(id) {
+        this.Init();
+        if (!this.Enabled || (this.Slot < 0) || !id) { return false; }
+
+        const mp = `mmce${this.Slot}:`;
+        try {
+            this.Call(mp, this.SETID, id, id.length + 1);
+
+            // Wait for the card to finish mounting. Launching mid-switch
+            // gives the game the wrong card, or none.
+            for (let i = 0; i < 10; i++) {
+                const st = this.Call(mp, this.STATUS, "", 0);
+                if (st < 0 || !(st & 1)) { break; }
+                System.sleep(1);
+            }
+            return true;
+        } catch (e) {
+            console.log(`MMCE: SetGameID failed: ${e}`);
+            return false;
+        }
+    }
+};
