@@ -111,7 +111,7 @@ const DiscTray = (() => {
 		// Use neutrino if available
 		if ((std.exists(`${PATHS.Neutrino}neutrino.elf`)) && (os.readdir(PATHS.Neutrino)[0].includes("modules"))) {
 			ELFPath = `${PATHS.Neutrino}neutrino.elf`;
-			ELFArgs = GetNeutrinoArgs(ELFName.toUpperCase);
+			ELFArgs = GetNeutrinoArgs(ELFName.toUpperCase());
         }
 
 		AddItem({
