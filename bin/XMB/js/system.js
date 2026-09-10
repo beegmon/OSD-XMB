@@ -399,9 +399,26 @@ function ftxtWrite(path, txt, mode = "w+") {
 function getGameName(path) {
 
     const noExt = path.replace(/\.[^/.]+$/, "");
-    const lastDot = noExt.lastIndexOf(".");
-    if (lastDot === -1 || lastDot === noExt.length - 1) return noExt.trim();
-    return noExt.slice(lastDot + 1);
+
+    // Pfs partition names, as written by BatchKit Manager and HDL tools:
+    // PP.<Game-ID>..<GameName>, PP.<Game-ID>.<GameName>, PP.HDL.<GameName>
+    let match = noExt.match(/^PP\.(?:[A-Z]{4}[-_]\d{3}\.\d{2}|[A-Z]{4}-\d{5}|HDL)\.+(.+)$/);
+    if (match) { return match[1].trim(); }
+
+    // POPStarter VCD names: [XX.]<Game-ID>.<GameName>
+    match = noExt.match(/^(?:[A-Z0-9]{2}\.)?(?:[A-Z]{4}[-_]\d{3}\.\d{2}|[A-Z]{4}-\d{5})\.(.+)$/);
+    if (match) { return match[1].trim(); }
+
+    // An unrecognised PP. name keeps the previous behaviour rather than guess.
+    if (noExt.startsWith("PP.")) {
+        const lastDot = noExt.lastIndexOf(".");
+        if (lastDot > -1 && lastDot < noExt.length - 1) { return noExt.slice(lastDot + 1); }
+    }
+
+    // Everything else is already the game name. Returning the text after the
+    // last dot destroys Redump filenames: a version suffix such as "(v1.00)"
+    // becomes "00)", and "Mr. Driller (USA)" becomes " Driller (USA)".
+    return noExt.trim();
 }
 function getGameCodeFromOldFormatName(path) {
 
